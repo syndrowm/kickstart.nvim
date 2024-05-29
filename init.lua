@@ -207,6 +207,45 @@ vim.api.nvim_create_autocmd('BufNewFile', {
   command = '0r ~/.config/nvim/skeleton/skeleton.sh',
 })
 
+function RustFeatureInner(feature)
+  require('lspconfig').rust_analyzer.setup {
+    settings = {
+      ['rust-analyzer'] = {
+        cargo = { features = { feature } },
+        procMacro = {
+          ignored = {
+            leptos_macro = {
+              'server',
+            },
+          },
+        },
+      },
+    },
+  }
+end
+
+function RustFeature()
+  local current_word = vim.call('expand', '<cword>')
+  RustFeatureInner(current_word)
+end
+
+function LeptosFormat()
+  require('conform').setup {
+    formatters = {
+      rustfmt = {
+        command = 'leptosfmt',
+        args = {
+          '--stdin',
+          '--rustfmt',
+        },
+      },
+    },
+  }
+  require('conform').format { async = true, lsp_fallback = true }
+end
+
+vim.keymap.set('n', '<leader>lf', LeptosFormat, { desc = '[L]eptos [F]ormat' })
+
 -- [[ Basic Autocommands ]]
 --  See `:help lua-guide-autocommands`
 
@@ -220,6 +259,14 @@ vim.api.nvim_create_autocmd('TextYankPost', {
     vim.highlight.on_yank()
   end,
 })
+
+vim.filetype.add {
+  extension = {
+    jinja = 'jinja',
+    jinja2 = 'jinja',
+    j2 = 'jinja',
+  },
+}
 
 -- [[ Install `lazy.nvim` plugin manager ]]
 --    See `:help lazy.nvim.txt` or https://github.com/folke/lazy.nvim for more info
@@ -595,6 +642,20 @@ require('lazy').setup({
         -- But for many setups, the LSP (`tsserver`) will work just fine
         -- tsserver = {},
         --
+        rust_analyzer = {
+          settings = {
+            ['rust-analyzer'] = {
+              cargo = { features = { 'ssr' } },
+              procMacro = {
+                ignored = {
+                  leptos_macro = {
+                    'server',
+                  },
+                },
+              },
+            },
+          },
+        },
 
         lua_ls = {
           -- cmd = {...},
@@ -610,8 +671,32 @@ require('lazy').setup({
             },
           },
         },
-      }
 
+        jinja_lsp = {},
+        tailwindcss = {
+          filetypes = { 'css', 'rs', 'jinja' },
+        },
+      }
+      -- vim.lsp.set_log_level 'debug'
+      local nvim_lsp = require 'lspconfig'
+      local configs = require 'lspconfig.configs'
+      if not configs.jinja_lsp then
+        configs.jinja_lsp = {
+          default_config = {
+            name = 'jinja-lsp',
+            cmd = { 'jinja-lsp' },
+            filetypes = { 'jinja', 'rs', 'python', 'html' },
+            root_dir = function(fname)
+              return nvim_lsp.util.find_git_ancestor(fname)
+            end,
+            init_options = {
+              templates = './templates',
+              backend = { './src' },
+              lang = 'rust',
+            },
+          },
+        }
+      end
       -- Ensure the servers and tools above are installed
       --  To check the current status of installed tools and/or manually install
       --  other tools, you can run
@@ -640,6 +725,7 @@ require('lazy').setup({
           end,
         },
       }
+      nvim_lsp.jinja_lsp.setup {}
     end,
   },
 
@@ -670,6 +756,8 @@ require('lazy').setup({
       end,
       formatters_by_ft = {
         lua = { 'stylua' },
+        -- rust = { 'rustfmt', 'leptosfmt' },
+        rust = { 'rustfmt' },
         -- Conform can also run multiple formatters sequentially
         -- python = { "isort", "black" },
         --
@@ -677,6 +765,23 @@ require('lazy').setup({
         -- is found.
         -- javascript = { { "prettierd", "prettier" } },
       },
+      -- formatters = {
+      --   rustfmt = {
+      --     command = 'leptosfmt',
+      --     args = {
+      --       '--stdin',
+      --       '--rustfmt',
+      --     },
+      --   },
+      --   leptosfmt = {
+      --     command = 'leptosfmt',
+      --     args = { '--stdin', '--rustfmt' },
+      --     condition = function(ctx)
+      --       -- only run on rust files that import leptos
+      --       return vim.bo.filetype == 'rust' and vim.fn.search 'use leptos' > 0
+      --     end,
+      --   },
+      -- },
     },
   },
 
@@ -747,11 +852,11 @@ require('lazy').setup({
           -- Accept ([y]es) the completion.
           --  This will auto-import if your LSP supports it.
           --  This will expand snippets if the LSP sent a snippet.
-          ['<C-y>'] = cmp.mapping.confirm { select = true },
+          -- ['<C-y>'] = cmp.mapping.confirm { select = true },
 
           -- If you prefer more traditional completion keymaps,
           -- you can uncomment the following lines
-          --['<CR>'] = cmp.mapping.confirm { select = true },
+          ['<CR>'] = cmp.mapping.confirm { select = true },
           --['<Tab>'] = cmp.mapping.select_next_item(),
           --['<S-Tab>'] = cmp.mapping.select_prev_item(),
 
@@ -882,6 +987,16 @@ require('lazy').setup({
   'ap/vim-buftabline',
   { 'windwp/nvim-autopairs', opts = {} },
   'tpope/vim-fugitive',
+  'Glench/Vim-Jinja2-Syntax',
+  {
+    'roobert/tailwindcss-colorizer-cmp.nvim',
+    -- optionally, override the default options:
+    config = function()
+      require('tailwindcss-colorizer-cmp').setup {
+        color_square_width = 2,
+      }
+    end,
+  },
 
   -- The following two comments only work if you have downloaded the kickstart repo, not just copy pasted the
   -- init.lua. If you want these files, they are in the repository, so you can just download them and
@@ -926,6 +1041,10 @@ require('lazy').setup({
     },
   },
 })
+
+require('cmp').config.formatting = {
+  format = require('tailwindcss-colorizer-cmp').formatter,
+}
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
