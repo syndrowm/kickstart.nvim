@@ -67,4 +67,7 @@ local config = {
 
 require('lspconfig').rust_analyzer.setup(config)
 
+local builtin = require 'telescope.builtin'
+vim.keymap.set('n', '<C-p>', builtin.find_files, { desc = 'Search files' })
+
 return {}
