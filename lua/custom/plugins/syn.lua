@@ -65,6 +65,18 @@ local config = {
   capabilities = capabilities,
 }
 
+require('conform').setup {
+  formatters_by_ft = {
+    python = function(bufnr)
+      if require('conform').get_formatter_info('ruff_format', bufnr).available then
+        return { 'ruff_format' }
+      else
+        return { 'isort', 'black' }
+      end
+    end,
+  },
+}
+
 require('lspconfig').rust_analyzer.setup(config)
 
 local builtin = require 'telescope.builtin'
