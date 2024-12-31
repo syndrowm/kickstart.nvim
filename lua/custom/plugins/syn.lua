@@ -22,11 +22,11 @@ end
 
 function LeptosFormat()
   require('conform').formatters.rustfmt = {
-        command = 'leptosfmt',
-        args = {
-          '--stdin',
-          '--rustfmt',
-      },
+    command = 'leptosfmt',
+    args = {
+      '--stdin',
+      '--rustfmt',
+    },
   }
   require('conform').format { async = true, lsp_fallback = true }
 end
@@ -64,7 +64,7 @@ require('lspconfig').rust_analyzer.setup(config)
 
 require('conform').setup {
   formatters_by_ft = {
-    rust = { "rustfmt", lsp_format = "fallback" },
+    rust = { 'rustfmt', lsp_format = 'fallback' },
     python = function(bufnr)
       if require('conform').get_formatter_info('ruff_format', bufnr).available then
         return { 'ruff_format' }
@@ -77,5 +77,7 @@ require('conform').setup {
 
 local builtin = require 'telescope.builtin'
 vim.keymap.set('n', '<C-p>', builtin.find_files, { desc = 'Search files' })
+vim.keymap.set('n', '<leader>df', vim.diagnostic.open_float, { desc = 'Open [D]iagnostic [F]loat' })
 
+--
 return {}
