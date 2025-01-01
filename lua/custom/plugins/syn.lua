@@ -77,7 +77,7 @@ require('conform').setup {
 
 local builtin = require 'telescope.builtin'
 vim.keymap.set('n', '<C-p>', builtin.find_files, { desc = 'Search files' })
-vim.keymap.set('n', '<leader>td', vim.diagnostic.open_float, { desc = '[T]oggle Diagnostic [F]loat' })
+vim.keymap.set('n', '<leader>tf', vim.diagnostic.open_float, { desc = '[T]oggle Diagnostic [F]loat' })
 
 --
 return {}
