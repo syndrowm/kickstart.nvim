@@ -78,6 +78,12 @@ require('conform').setup {
 local builtin = require 'telescope.builtin'
 vim.keymap.set('n', '<C-p>', builtin.find_files, { desc = 'Search files' })
 vim.keymap.set('n', '<leader>tf', vim.diagnostic.open_float, { desc = '[T]oggle Diagnostic [F]loat' })
+-- code action
+vim.keymap.set('n', '<leader>cc', vim.lsp.buf.code_action, { desc = '[C]ode A[c]tion' })
 
---
+vim.cmd([[
+  hi NormalFloat guibg=#1e222a  " Set background color of the floating window
+  hi FloatBorder guifg=#56b6c2  " Set border color
+]])
+
 return {}
