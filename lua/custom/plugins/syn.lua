@@ -1,40 +1,4 @@
-function RustFeatureInner(feature)
-  require('lspconfig').rust_analyzer.setup {
-    settings = {
-      ['rust-analyzer'] = {
-        cargo = { features = { feature } },
-        procMacro = {
-          ignored = {
-            leptos_macro = {
-              'server',
-            },
-          },
-        },
-      },
-    },
-  }
-end
-
-function RustFeature()
-  local current_word = vim.call('expand', '<cword>')
-  RustFeatureInner(current_word)
-end
-
-function LeptosFormat()
-  require('conform').formatters.rustfmt = {
-    command = 'leptosfmt',
-    args = {
-      '--stdin',
-      '--rustfmt',
-    },
-  }
-  require('conform').format { async = true, lsp_fallback = true }
-end
-
-vim.keymap.set('n', '<leader>lf', LeptosFormat, { desc = '[L]eptos [F]ormat' })
-
-local capabilities = vim.lsp.protocol.make_client_capabilities()
-capabilities = vim.tbl_deep_extend('force', capabilities, require('cmp_nvim_lsp').default_capabilities())
+local capabilities = require('blink.cmp').get_lsp_capabilities()
 
 local config = {
   settings = {
@@ -44,14 +8,6 @@ local config = {
         command = 'clippy',
       },
       cargo = { allFeatures = true, autoreload = true },
-      procMacro = {
-        enabled = true,
-        ignored = {
-          leptos_macro = {
-            'server',
-          },
-        },
-      },
       callInfo = { full = true },
       lens = { enable = true, references = true, implementations = true, enumVariantReferences = true, methodReferences = true },
       inlayHints = { enable = true, typeHints = true, parameterHints = true },
@@ -63,6 +19,20 @@ local config = {
 require('lspconfig').rust_analyzer.setup(config)
 
 require('conform').setup {
+  format_after_save = function(bufnr)
+    -- Disable with a global or buffer-local variable
+    if vim.g.disable_autoformat or vim.b[bufnr].disable_autoformat then
+      return
+    end
+    return { timeout_ms = 500, lsp_format = 'fallback' }
+  end,
+  format_on_save = function(bufnr)
+    -- Disable with a global or buffer-local variable
+    if vim.g.disable_autoformat or vim.b[bufnr].disable_autoformat then
+      return {}
+    end
+    return { timeout_ms = 500, lsp_format = 'fallback' }
+  end,
   formatters_by_ft = {
     rust = { 'rustfmt', lsp_format = 'fallback' },
     python = function(bufnr)
@@ -81,9 +51,28 @@ vim.keymap.set('n', '<leader>tf', vim.diagnostic.open_float, { desc = '[T]oggle 
 -- code action
 vim.keymap.set('n', '<leader>cc', vim.lsp.buf.code_action, { desc = '[C]ode A[c]tion' })
 
-vim.cmd([[
+vim.cmd [[
   hi NormalFloat guibg=#1e222a  " Set background color of the floating window
   hi FloatBorder guifg=#56b6c2  " Set border color
-]])
+]]
+
+vim.api.nvim_create_user_command('FormatDisable', function(args)
+  if args.bang then
+    -- FormatDisable! will disable formatting just for this buffer
+    vim.b.disable_autoformat = true
+  else
+    vim.g.disable_autoformat = true
+  end
+end, {
+  desc = 'Disable autoformat-on-save',
+  bang = true,
+})
+
+vim.api.nvim_create_user_command('FormatEnable', function()
+  vim.b.disable_autoformat = false
+  vim.g.disable_autoformat = false
+end, {
+  desc = 'Re-enable autoformat-on-save',
+})
 
 return {}
