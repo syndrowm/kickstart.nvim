@@ -3,7 +3,7 @@ local capabilities = require('blink.cmp').get_lsp_capabilities()
 local config = {
   settings = {
     ['rust-analyzer'] = {
-      checkOnSave = {
+      check = {
         allFeatures = true,
         command = 'clippy',
       },
